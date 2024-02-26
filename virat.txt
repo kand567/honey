@@ -1,0 +1,88 @@
+1.#implement data wrangling on a dataset
+1.import pandas as pd
+2.pwd
+3.df=pd.read_csv("exl.csv")
+df
+	a	b	c	d     message
+0	1	2	3	4	hello
+1	5	6	7	8	akash
+2	9	10	11	12	welldone
+4.df2=pd.read_table("exl.csv",sep=',')
+df2
+5.list(open( "ex2.txt"))
+'                     a                      b\n',
+ 'aaaa             -0.343434              -0.78544\n',
+ 'bbbb              8.343421               9.56754\n',
+ 'cccc             -9.876543              -0.76765\n',
+ 'dddd              1.3345566              5.678910']
+6.result=pd.read_table("ex2.txt",sep='\s+')
+result
+
+2.#demonstrate the handling of missing data and string manipulation
+#string manipulation
+1.val='akash,abhishek,anchal'
+val
+2.val.split(',')
+3.splitOutput=val.split(',')
+4.val
+5.splitOutput
+6.pieces=[x.strip()for x in val.split(',')]
+places
+7.first,second,third=pieces
+8.first
+9.second
+10.third
+11.'::'.join(pieces)
+12.val
+13.val.replace(',','::')
+
+3.#implement  the code to interact with web apis(2.1)get,post,put,delete.
+#perform web scrapping
+#interacting with web ui(2.1)
+1.import requests
+2.url='https://dummyjason.com/products'
+url
+3.resp=requests.get(url)
+resp
+4.resp=requests.get(url)
+resp       
+5.data=resp.json()
+data
+
+#interacting with databases
+1.import sqlite3
+2.query = """ 
+       CREATE TABLE test 
+       (firstName VARCHAR(20), lastName VARCHAR(20), 
+       rnumber REAL, inumber INTEGER 
+       );"""
+3.con=sqlite3.connect('mydata.sqlite')
+4.con.execute(query)
+5.con.commit()
+6.data=[('akash','mishra',4.65,6),
+      ('abhi','kumar',5.12,8),
+      ('golu','tiw',9.98,9)]
+7.stmt="INSERT INTO test VALUES(?,?,?,?)"
+8.con.executemany(stmt,data)
+9.con.commit()
+10.cursor=con.execute('select * from test')
+11.rows=cursor.fetchall()
+rows
+
+3.#perform data cleaning and preparation
+1.import pandas as pd 
+import numpy as np
+2.#perform data cleaning and preparation
+string_data=pd.Series(['akash','virat',np.nan,'rohit','shami','gill'])
+string_data
+3.string_data.isnull()
+4.string_data[0]=None
+5.string_data
+6.string_data.isnull()
+7.from numpy import nan as NA
+8.data=pd.Series([1,1.5,NA,6.3])
+data
+9.data
+10.data.dropna()
+11.string_data
+
