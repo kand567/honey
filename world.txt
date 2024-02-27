@@ -1,0 +1,162 @@
+!pip install pyspark
+!pip install findspark
+!from pyspark.sql import SparkSession
+from pyspark import SparkContext
+
+try:
+    sc = SparkContext.getOrCreate()
+except:
+    sc = SparkContext()
+sc.stop()
+
+# Create a Spark session
+spark = SparkSession.builder.master("local[*]").appName("example").getOrCreate()
+
+# Now you can use PySpark functionalities with 'spark' object
+
+1.: Filtering RDDs, and the Minimum Temperature by Location
+from pyspark import SparkConf, SparkContext 
+conf = 
+SparkConf().setMaster("local").setAppName("MinTemperatures") 
+sc = SparkContext(conf = conf) 
+def parseLine(line): 
+fields = line.split(',') 
+stationID = fields[0] 
+entryType = fields[2] 
+temperature = float(fields[3]) * 0.1 * (9.0 / 5.0) + 32.0 
+return (stationID, entryType, temperature) 
+lines = sc.textFile("file:///SparkCourse/1800.csv") 
+parsedLines = lines.map(parseLine)
+minTemps = parsedLines.filter(lambda x: "TMIN" in x[1])
+stationTemps = minTemps.map(lambda x: (x[0], x[2]))
+minTemps = stationTemps.reduceByKey(lambda x, y: min(x,y))
+results = minTemps.collect();
+for result in results:
+print(result[0] + "\t{:.2f}F".format(result[1])
+
+
+2.:Counting Word Occurrences using flatmap()
+from pyspark import SparkConf, SparkContext 
+conf = SparkConf().setMaster("local").setAppName("WordCount") 
+sc = SparkContext (conf = conf) 
+input = sc.textFile("book.txt") 
+word = input.flatMap(lambda x : x.split())
+wordCounts = word.countByValue() 
+print(wordCounts) 
+for word, count in wordCounts.items(): 
+ cleanWord = word.encode('ascii','ignore') 
+if (cleanWord): 
+ print(cleanWord.decode()+ " "+ str(count)) 
+
+
+3.: Executing SQL commands and SQL-style functions on a 
+Data Frame 
+from pyspark.sql import SparkSession 
+from pyspark.sql import Row 
+import collections 
+# Create a SparkSession (Note, the config section is only for  Windows!) 
+spark = SparkSession.builder.config("spark.sql.warehouse.dir", "file:///C:/temp").appName("SparkSQL").getOrCreate() 
+def mapper(line): 
+ fields = line.split(',') 
+ return Row(ID=int(fields[0]), name=str(fields[1].encode("utf-8")), 
+age=int(fields[2]), numFriends=int(fields[3])) 
+lines = spark.sparkContext.textFile("fakefriends.csv") 
+people = lines.map(mapper) 
+# Infer the schema, and register the DataFrame as a table. 
+schemaPeople = spark.createDataFrame(people).cache() 
+schemaPeople.createOrReplaceTempView("people") 
+# SQL can be run over DataFrames that have been registered as a table. 
+teenagers = spark.sql("SELECT * FROM people WHERE age >= 13 AND age <= 19") 
+# The results of SQL queries are RDDs and support all the normal RDD operations. 
+for teen in teenagers.collect(): 
+ print(teen) 
+# We can also use functions instead of SQL queries: 
+schemaPeople.groupBy("age").count().orderBy("age").show() 
+spark.stop()
+
+
+4. Implement Total Spent by Customer with DataFrame
+from pyspark import SparkConf, SparkContext 
+conf=SparkConf().setMaster("local").setAppName("SpendByCustom
+er") 
+sc = SparkContext(conf = conf) 
+def extractCustomerPricePairs(line): 
+fields = line.split(',') 
+return (int(fields[0]), float(fields[2])) 
+input = sc.textFile("customer-orders.csv") 
+mappedInput = input.map(extractCustomerPricePairs) 
+totalByCustomer = mappedInput.reduceByKey(lambda x, y: x + y) 
+results = totalByCustomer.collect(); 
+for result in results: 
+Page 12 of 22
+print(result)
+
+
+5.Use Broadcast Variables to Display Movie Names Instead of ID Numbers 
+
+from pyspark.sql import SparkSession 
+from pyspark.sql import Row 
+from pyspark.sql import functions 
+def loadMovieNames(): 
+movieNames = {} 
+with open("u.item",encoding = "ISO-8859-1") as f: 
+for line in f: 
+fields = line.split('|') 
+ movieNames[int(fields[0])] = fields[1] 
+return movieNames 
+# Create a SparkSession (the config bit is only for Windows!) 
+spark = SparkSession.builder.config("spark.sql.warehouse.dir", 
+"file:///C:/temp").appName("PopularMovies").getOrCreate()
+ # Load up our movie ID -> name dictionary nameDict = 
+loadMovieNames() 
+# Get the raw data
+lines = spark.sparkContext.textFile("u.data") 
+# Convert it to a RDD of Row objects 
+movies = lines.map(lambda x: Row(movieID =int(x.split()[1])))
+#Convert that to a DataFrame 
+movieDataset = spark.createDataFrame(movies) 
+# Some SQL-style magic to sort all movies by popularity in one line! 
+topMovieIDs = 
+movieDataset.groupBy("movieID").count().orderBy("count", 
+ascending=False).cache() 
+# Show the results at this point:
+topMovieIDs.show()
+# Grab the top 10 top10 = topMovieIDs.take(10) 
+# Print the results 
+print("\n") for result in top10: 
+# Each row has movieID, count as above. 
+print("%s: %d" % (nameDict[result[0]], result[1])) 
+# Stop the session spark.stop()
+
+
+6.Create Similar Movies from One Million Rating
+
+from pyspark.sql import SparkSession spark = 
+SparkSession.builder.appName('recommendation').getOrCreate() 
+from pyspark.ml.evaluation import RegressionEvaluator from 
+pyspark.ml.recommendation import ALS 
+data = spark.read.csv('ratings1.csv',inferSchema=True,header=True) 
+data.head() 
+data.printSchema() 
+data.describe().show() 
+(train_data, test_data) = data.randomSplit([0.8, 0.2], seed=42) 
+als = ALS(maxIter=5, regParam=0.01, userCol="userId", 
+itemCol="movieId", ratingCol="rating") model = als.fit(train_data) 
+predictions = model.transform(test_data) 
+predictions.show() 
+evaluator = RegressionEvaluator(metricName="rmse", 
+labelCol="rating",predictionCol="prediction") rmse = 
+evaluator.evaluate(predictions) 
+print("Root-mean-square error = " + str(rmse)) 
+single_user = 
+test_data.filter(test_data['userId']==12).select(['movieId','userId']) 
+single_user.show() 
+reccomendations = model.transform(single_user) 
+reccomendations.orderBy('prediction',ascending=False).show() 
+
+7.Using Spark ML to Produce Movie Recommendation
+
+
+
+
+
